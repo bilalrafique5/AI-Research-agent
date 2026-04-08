@@ -2,6 +2,7 @@ from agents.planner import plan_task
 from agents.search import search_agent
 from agents.summarizer import summarize
 from agents.report import generate_report
+from tools.pdf_generator import generate_research_pdf
 
 async def run_workflow(query: str):
     # Step 1: Planning
@@ -19,9 +20,13 @@ async def run_workflow(query: str):
 
     # Step 4: Report
     report = generate_report(summary)
+    
+    # Step 5: Generate PDF
+    pdf_path = generate_research_pdf(report, query)
 
     return {
         "plan": plan,
         "summary": summary,
-        "report": report
+        "report": report,
+        "pdf_path": pdf_path
     }
