@@ -1,24 +1,45 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException, status
 from starlette.responses import FileResponse
 from pydantic import BaseModel
 from services.workflow import run_workflow
+from api.dependencies import get_current_user
+from config.database import db
+from datetime import datetime
+from bson import ObjectId
 import os
 
-router = APIRouter()
+router = APIRouter(prefix="/api")
 
 class ResearchRequest(BaseModel):
     query: str
 
 @router.post("/research")
-async def research(request: ResearchRequest):
+async def research(request: ResearchRequest, user: dict = Depends(get_current_user)):
     """
     Execute research workflow with critic evaluation and generate PDF report
     Flow: Planner → Research → Summarizer (with sources & confidence) → Report → Critic → PDF
+    
+    Requires authentication with Bearer token
     """
     query = request.query
     
     # Run the complete workflow
     result = await run_workflow(query)
+
+    # Store research in user's history
+    research_record = {
+        "username": user["username"],
+        "query": query,
+        "created_at": datetime.utcnow(),
+        "result": {
+            "plan": result["plan"],
+            "overall_score": result["evaluation"]["overall_score"],
+            "sources_count": len(result["sources"]),
+            "pdf_path": result["pdf_path"]
+        }
+    }
+    
+    db.research_history.insert_one(research_record)
 
     return {
         "status": "success",
@@ -51,10 +72,34 @@ async def research(request: ResearchRequest):
         }
     }
 
+@router.get("/research-history")
+async def get_research_history(user: dict = Depends(get_current_user)):
+    """
+    Get user's research history
+    
+    Requires authentication with Bearer token
+    """
+    history = list(db.research_history.find(
+        {"username": user["username"]},
+        {"_id": 1, "query": 1, "created_at": 1, "result": 1}
+    ).sort("created_at", -1).limit(20))
+    
+    # Convert ObjectId to string for JSON serialization
+    for record in history:
+        record["_id"] = str(record["_id"])
+    
+    return {
+        "status": "success",
+        "count": len(history),
+        "history": history
+    }
+
 @router.get("/download-report/{filename}")
-async def download_report(filename: str):
+async def download_report(filename: str, user: dict = Depends(get_current_user)):
     """
     Download the generated PDF report
+    
+    Requires authentication with Bearer token
     """
     pdf_dir = os.path.join(os.path.dirname(__file__), "..", "reports")
     file_path = os.path.join(pdf_dir, filename)

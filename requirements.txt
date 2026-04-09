@@ -7,3 +7,9 @@ tavily-python
 python-dotenv
 groq
 reportlab
+pymongo
+pydantic
+python-jose[cryptography]
+argon2-cffi
+pyjwt
+email-validator
