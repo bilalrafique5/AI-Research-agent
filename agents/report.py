@@ -8,21 +8,29 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
 
 def generate_report(summary: str):
-    prompt = f"""Create a structured research report from this summary.
+    prompt = f"""Create a structured research report with confidence indicators.
 
-Include these sections:
-1. EXECUTIVE SUMMARY (3-4 sentences)
-2. KEY FINDINGS (5-7 bullet points, concise)
-3. RECOMMENDATIONS (3-5 actionable items)
-4. CONCLUSION (2-3 sentences)
+Format the report with:
+1. EXECUTIVE SUMMARY (2-3 sentences, confidence: X%)
+2. KEY FINDINGS (structured as "Topic: Description (confidence: X%)")
+3. SOURCES
+4. CONCLUSION (1-2 sentences)
 
-Be concise, professional, and easy to read.
+The summary already contains topics with confidence scores - preserve those.
+Extract the SOURCES section from the summary if present.
 
-Summary: {summary}"""
+Summary content:
+{summary}
+
+Guidelines:
+- Maintain confidence scores from the summary
+- List all sources with their confidence levels
+- Use clear, professional language
+- Be concise and well-organized"""
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}]  ,
+        messages=[{"role": "user", "content": prompt}],
         temperature=0
     )
 

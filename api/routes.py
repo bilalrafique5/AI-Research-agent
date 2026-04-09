@@ -12,7 +12,8 @@ class ResearchRequest(BaseModel):
 @router.post("/research")
 async def research(request: ResearchRequest):
     """
-    Execute research workflow and generate PDF report
+    Execute research workflow with critic evaluation and generate PDF report
+    Flow: Planner → Research → Summarizer (with sources & confidence) → Report → Critic → PDF
     """
     query = request.query
     
@@ -24,9 +25,29 @@ async def research(request: ResearchRequest):
         "result": {
             "plan": result["plan"],
             "summary": result["summary"],
+            "sources": [
+                {
+                    "title": s["title"],
+                    "url": s["url"],
+                    "domain": s["source"],
+                    "confidence": f"{int(s['confidence']*100)}%"
+                } for s in result["sources"]
+            ],
             "report": result["report"],
+            "evaluation": {
+                "clarity_score": result["evaluation"]["clarity_score"],
+                "accuracy_score": result["evaluation"]["accuracy_score"],
+                "completeness_score": result["evaluation"]["completeness_score"],
+                "overall_score": result["evaluation"]["overall_score"],
+                "passed": result["evaluation"]["passed"],
+                "feedback": result["evaluation"]["feedback"],
+                "issues": result["evaluation"]["issues"],
+                "recommendation": result["evaluation"]["recommendation"]
+            },
+            "search_status": result["search_status"],
+            "regeneration_count": result["regeneration_count"],
             "pdf_path": result["pdf_path"],
-            "message": "PDF report generated successfully"
+            "message": "Research completed with sources and confidence scores"
         }
     }
 

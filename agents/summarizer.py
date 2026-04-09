@@ -7,27 +7,49 @@ load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
 
-def summarize(content: str):
-    prompt = f"""Summarize the content concisely and clearly.
+def summarize(content: str, sources: list = None):
+    """
+    Summarize content and create structured output with confidence scores and sources.
+    
+    Args:
+        content: The content to summarize
+        sources: List of source objects with metadata
+    """
+    sources = sources or []
+    
+    prompt = f"""Extract main topics and create a structured summary.
 
-Provide ONLY:
-- 5-8 key bullet points
-- Each point: 1 sentence maximum
-- Focus on main ideas and important details
-- Use clear, simple language
-- NO extra explanation needed
+For each topic found, provide in this EXACT format:
+Topic Name: Description (confidence: XX%)
 
-Content: {content}
+Rules:
+- 5-8 key topics only
+- Each topic: 1-2 sentences maximum
+- Confidence score: 70-95% based on information clarity
+- No bullet points
+- Each topic on one new line
 
-Output as bullet points only:
-• [key point]
-• [key point]
-Etc."""
+Content:
+{content}
+
+Format example:
+Ceasefire Agreement: US and Iran agreed to a 2-week halt (confidence: 92%)
+Oil Market Impact: Prices dropped below $100/barrel (confidence: 88%)"""
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{"role": "user", "content": prompt}],
         temperature=0
     )
-
-    return response.choices[0].message.content
+    
+    summary_text = response.choices[0].message.content
+    
+    # Add source information to the summary
+    if sources:
+        summary_text += "\n\n=== SOURCES ===" 
+        for source in sources:
+            if source.get("url") and source["url"] != "internal://knowledge-base":
+                summary_text += f"\n• {source['source']}: {source['title']}"
+                summary_text += f" (Confidence: {int(source['confidence']*100)}%)"
+    
+    return summary_text
