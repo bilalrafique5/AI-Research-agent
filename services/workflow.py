@@ -54,7 +54,7 @@ async def run_workflow(query: str):
         evaluation = evaluate_report(report, query)
     
     # Step 7: Generate PDF
-    pdf_path = generate_research_pdf(report, query)
+    pdf_result = generate_research_pdf(report, query)
 
     return {
         "plan": plan,
@@ -64,5 +64,6 @@ async def run_workflow(query: str):
         "evaluation": evaluation,
         "regeneration_count": regeneration_count,
         "search_status": search_status,
-        "pdf_path": pdf_path
+        "pdf_path": pdf_result["path"],
+        "pdf_filename": pdf_result["filename"]
     }

@@ -13,3 +13,6 @@ python-jose[cryptography]
 argon2-cffi
 pyjwt
 email-validator
+PyPDF2
+scikit-learn
+numpy

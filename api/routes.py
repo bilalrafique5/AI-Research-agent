@@ -35,7 +35,8 @@ async def research(request: ResearchRequest, user: dict = Depends(get_current_us
             "plan": result["plan"],
             "overall_score": result["evaluation"]["overall_score"],
             "sources_count": len(result["sources"]),
-            "pdf_path": result["pdf_path"]
+            "pdf_path": result["pdf_path"],
+            "pdf_filename": result["pdf_filename"]
         }
     }
     
@@ -68,6 +69,7 @@ async def research(request: ResearchRequest, user: dict = Depends(get_current_us
             "search_status": result["search_status"],
             "regeneration_count": result["regeneration_count"],
             "pdf_path": result["pdf_path"],
+            "pdf_filename": result["pdf_filename"],
             "message": "Research completed with sources and confidence scores"
         }
     }
