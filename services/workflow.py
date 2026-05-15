@@ -4,12 +4,25 @@ from agents.summarizer import summarize
 from agents.report import generate_report
 from agents.critic import evaluate_report, should_regenerate
 from tools.pdf_generator import generate_research_pdf
+from config.secret_manager import get_flag  # ← Add karo
+from fastapi import HTTPException          # ← Add karo
 
 async def run_workflow(query: str):
+    
+    # ← Sabse pehle flag check karo
+    if not get_flag("TAVILY_SEARCH_ENABLED"):
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "disabled",
+                "message": "Research service is currently disabled by admin. Please try again later."
+            }
+        )
+    
     # Step 1: Planning
     plan = plan_task(query)
 
-    # Step 2: Search (with error handling)
+    # Step 2: Search
     search_status = "success"
     try:
         results = search_agent(query)
@@ -22,7 +35,6 @@ async def run_workflow(query: str):
     sources = []
     for r in results:
         combined += r.get("content", "") + "\n"
-        # Collect source information
         source_info = {
             "title": r.get("title", ""),
             "url": r.get("url", ""),
@@ -31,7 +43,7 @@ async def run_workflow(query: str):
         }
         sources.append(source_info)
 
-    # Step 3: Summarize with sources
+    # Step 3: Summarize
     summary = summarize(combined, sources)
 
     # Step 4: Report Generation
@@ -45,12 +57,8 @@ async def run_workflow(query: str):
     # Step 6: Auto-regenerate if needed
     while should_regenerate(evaluation) and regeneration_count < max_regenerations:
         regeneration_count += 1
-        
-        # Regenerate with feedback
         feedback_prompt = f"Previous report issues:\n{chr(10).join(evaluation['issues'])}\n\nFeedback: {evaluation['recommendation']}"
         report = generate_report(summary + "\n\n" + feedback_prompt)
-        
-        # Re-evaluate
         evaluation = evaluate_report(report, query)
     
     # Step 7: Generate PDF

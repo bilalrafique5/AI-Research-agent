@@ -1,1 +1,7 @@
 .env
+gist.txt
+.env
+myvenv/
+__pycache__/
+credentials.txt
+
