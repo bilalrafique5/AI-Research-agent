@@ -1,3 +1,4 @@
+# main.py
 from config.secret_manager import load_secrets
 load_secrets()  # ← Yeh sabse pehle chalega
 
